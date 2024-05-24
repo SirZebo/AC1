@@ -1,11 +1,8 @@
 import streamlit as st
+from streamlit_extras.app_logo import add_logo
+from Analysis import analysis
 
-def main():
-    st.set_page_config(
-        page_title="steganography",
-        layout="wide"
-    )
-
+def steganography():
     st.header("Steganography")
 
     # Create one columns
@@ -71,7 +68,5 @@ def main():
             disabled=not st.session_state.payload_uploaded
         )
         
-        st.write(f"Number of LSB bits selected for Steganography: {lsb_selected}")
-
-if __name__ == '__main__':
-    main()
+        if st.session_state.payload_uploaded:
+            st.write(f"Number of LSB bits selected for Steganography: {lsb_selected}")
