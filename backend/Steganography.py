@@ -66,14 +66,15 @@ def decode(image_name):
     image = cv2.imread(image_name)
     all_bytes = []
     byte = ""
-    for row in image:
-        for pixel in row:
-            for color in pixel:
-                pixelValues = to_bin(color)
-                byte += pixelValues[-1]
-                if len(byte) == 8:
-                    all_bytes.append(byte)
-                    byte = ""
+    for lsb in range(1,9):
+        for row in image:
+            for pixel in row:
+                for color in pixel:
+                    pixelValues = to_bin(color)
+                    byte += pixelValues[-lsb]
+                    if len(byte) == 8:
+                        all_bytes.append(byte)
+                        byte = ""
     queue = []
     pos = 0
     for byte in all_bytes:
@@ -114,10 +115,38 @@ def decode(image_name):
         file.write(decoded_data)
     print("[+] Data extracted and saved as", output_file)
 
+def encodeMedia(media_path, secret_file):
+    cap = cv2.VideoCapture(media_path)
+    #fps = cap.get(cv2.CAP_PROP_FPS)
+    frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    #duration = frame_count/fps
+
+    with open(secret_file, "rb") as file:
+        secret_data = file.read()
+
+    dataIndex = [0]
+    binary_secret_data = byteToBinary(secret_data) + to_bin(SUPER_SECRET_KEY) # convert data to binary
+    for i in range(1, frame_count):
+        cap.set(1, i)
+        res, frame = cap.read()
+        height, width, channels = frame.shape
+        for x in range(0, width) :
+            for y in range(0, height):
+                # print(x,y, frame[x,y,0], frame[x,y,1], frame[x,y,2])
+                print(frame[x,y,0]) #B Channel Value
+                print(frame[x,y,1]) #G Channel Value
+                print(frame[x,y,2]) #R Channel Value
+
+    cap.release()
+    
+    
+
+
 if __name__ == "__main__":
     input_image = "cover_image.jpg"
     output_image = "stego.PNG"
     secret_file = "secret.ZIP"
+    cover_media = "cover_media.mp4"
     # encode the data into the image
     encoded_image = encode(image_name=input_image, secret_file=secret_file)
     # save the output image (encoded image)
@@ -125,3 +154,4 @@ if __name__ == "__main__":
     # decode the secret data from the image
     decoded_data = decode(output_image)
     print("[+] Decoded data:", decoded_data)
+    ##encodeMedia(cover_media, secret_file)
