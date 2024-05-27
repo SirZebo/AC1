@@ -1,7 +1,7 @@
-import subprocess
 import wave
 import os
 from tempfile import TemporaryDirectory
+import shutil
 
 def to_bin(data):
     """Convert `data` to binary format as string"""
@@ -14,17 +14,7 @@ def to_bin(data):
     else:
         raise TypeError("Type not supported.")
 
-def convert_to_wav(input_audio_path):
-    """Convert an audio file to WAV format using ffmpeg."""
-    output_audio_path = os.path.splitext(input_audio_path)[0] + ".wav"
-    subprocess.run(['ffmpeg', '-i', input_audio_path, output_audio_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    return output_audio_path
-
 def encode_audio(secret_file, cover_audio_path, bits_per_sample):
-    # Convert cover audio to WAV if necessary
-    if not cover_audio_path.endswith(".wav"):
-        cover_audio_path = convert_to_wav(cover_audio_path)
-
     # Open cover audio
     with wave.open(cover_audio_path, 'rb') as cover_audio:
         n_frames = cover_audio.getnframes()
@@ -98,6 +88,7 @@ def decode_audio(audio_path, bits_per_sample):
     
     print(f"[+] Data extracted and saved as {output_file}")
 
+
 # Example usage:
-encode_audio("secret.txt", "cover_audio.mp3", 2)
+encode_audio("secret.zip", "cover_audio.wav", 2)
 decode_audio("stego_sound.wav", 2)
