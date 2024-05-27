@@ -43,24 +43,35 @@ def encode(secret_file, cover_image_path, bits_per_pixel):
 
     return image
 
+
 def decode(image_path, bits_per_pixel):
     image = cv2.imread(image_path)
     if image is None:
         raise FileNotFoundError("Image not found for decoding.")
 
     binary_data = ""
+    delimiter = to_bin("=====")
+    found_delimiter = False
+
     for row in image:
+        if found_delimiter:
+            break
         for pixel in row:
+            if found_delimiter:
+                break
             for color in pixel:
                 binary_color = to_bin(color)
                 binary_data += binary_color[-bits_per_pixel:]
+                # Check if the last 'n' bits contain the delimiter
+                if binary_data[-len(delimiter):] == delimiter:
+                    found_delimiter = True
+                    break
+
+    if found_delimiter:
+        binary_data = binary_data[:binary_data.find(delimiter)]
 
     all_bytes = [binary_data[i: i+8] for i in range(0, len(binary_data), 8)]
     decoded_data = bytes([int(byte, 2) for byte in all_bytes])
-    delimiter = bytes([int(to_bin("=====")[i: i+8], 2) for i in range(0, len(to_bin("=====")), 8)])
-    pos = decoded_data.find(delimiter)
-    if pos != -1:
-        decoded_data = decoded_data[:pos]
 
     # File type detection
     file_signature = {
@@ -70,13 +81,11 @@ def decode(image_path, bits_per_pixel):
         b'\x25\x50\x44\x46': 'PDF'   # PDF file header
     }
     
-    # Determine file type
+    output_file = "extracted_secret.bin"  # Default binary file if no known signature is found
     for signature, extension in file_signature.items():
         if decoded_data.startswith(signature):
             output_file = f"extracted_secret.{extension.lower()}"
             break
-    else:
-        output_file = "extracted_secret.bin"  # Default binary file if no known signature is found
 
     # Write to output file
     with open(output_file, "wb") as file:
