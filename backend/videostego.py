@@ -1,16 +1,27 @@
 import numpy as np
 import cv2 
 from numpy import binary_repr
-from PIL import Image
-import skvideo.io
 
+from zipfile import ZipFile
 
+ZIPPED_SECRET_FILE_NAME = 'zippedSecret.zip'
 
 def load_secret(fname):
     with open(fname, 'rb') as f:
         data = f.read()
     return data
 
+def zipSecretFile(inputFile):
+    with ZipFile(ZIPPED_SECRET_FILE_NAME,'w') as zip:
+        print("Zipping secret...")
+        zip.write(inputFile)
+        print("Zipping secret Done!")
+
+def unzipSecretFile(file_name: str):
+    with ZipFile(file_name, 'r') as zip:
+        print("Unzipping secret...")
+        zip.extractall() 
+        print("Unzipping secret Done!")
 
 
 def encode(coverMedia: str, secretFile: str, outputFile: str):
@@ -22,7 +33,8 @@ def encode(coverMedia: str, secretFile: str, outputFile: str):
     fps = vidcap.get(cv2.CAP_PROP_FPS)
     out = cv2.VideoWriter(outputFile, fourcc, fps, size)
 
-    secret_bytes = load_secret(secretFile) + bytes(SUPER_SECRET_KEY, 'utf-8')
+    zipSecretFile(secretFile)
+    secret_bytes = load_secret(ZIPPED_SECRET_FILE_NAME) + bytes(SUPER_SECRET_KEY, 'utf-8')
     bits = []
     # As it's assumed you'll be embedding 3 bits in each pixel,
     # we'll split each byte in three triplets.
@@ -61,7 +73,7 @@ def encode(coverMedia: str, secretFile: str, outputFile: str):
     out.release()
     cv2.destroyAllWindows()
 
-def decode(outputFile: str, outputSecret: str):
+def decode(outputFile: str):
     vidcap = cv2.VideoCapture(outputFile)
     bits = []
     while True:
@@ -76,11 +88,17 @@ def decode(outputFile: str, outputSecret: str):
     bytestream = b''
     for i in range(0, len(bits), 3):
         bytestream += bytes([(bits[i] << 6) | (bits[i+1] << 3) | bits[i+2]])
-        if bytestream[-len(SUPER_SECRET_KEY):].decode("utf-8") == SUPER_SECRET_KEY:
-            break
+        print(bytestream)
+        try:
+            if bytestream[-len(SUPER_SECRET_KEY):].decode("utf-8") == SUPER_SECRET_KEY:
+                break
+        except UnicodeDecodeError:
+            continue
     # `bytestream` should now be equal to `secret_bytes`
-    with open(outputSecret, 'wb') as f:
+    with open(ZIPPED_SECRET_FILE_NAME, 'wb') as f:
         f.write(bytestream[:-len(SUPER_SECRET_KEY)])
+    
+    unzipSecretFile(ZIPPED_SECRET_FILE_NAME)
 
 outputFile = "output1.avi"
 secretFile = "hello.txt"
@@ -88,5 +106,5 @@ coverMedia = "elmo.gif"
 outputSecret = 'extracted_secret.txt'
 SUPER_SECRET_KEY = "This_is_a_very_secret_key_of_Ambrose_Goh"
 
-encode(coverMedia, secretFile, outputFile)
-decode(outputFile, outputSecret)
+#encode(coverMedia, secretFile, outputFile)
+decode(outputFile)
