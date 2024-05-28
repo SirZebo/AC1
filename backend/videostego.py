@@ -5,20 +5,7 @@ from PIL import Image
 import skvideo.io
 
 
-fps = 29.75
-outputFile = "output1.avi"
-secretFile = "hello.txt"
-coverMedia = "elmo.gif"
-SUPER_SECRET_KEY = "This_is_a_very_secret_key_of_Ambrose_Goh"
 
-'''
-writer = skvideo.io.FFmpegWriter(outputFile, outputdict={
-  '-vcodec': 'libx264',  #use the h.264 codec
-  '-crf': '0',           #set the constant rate factor to 0, which is lossless
-  '-preset':'veryslow'   #the slower the better compression, in princple, try 
-                         #other options see https://trac.ffmpeg.org/wiki/Encode/H.264
-}) 
-''' 
 def load_secret(fname):
     with open(fname, 'rb') as f:
         data = f.read()
@@ -26,12 +13,13 @@ def load_secret(fname):
 
 
 
-def encode():
+def encode(coverMedia: str, secretFile: str, outputFile: str):
     vidcap = cv2.VideoCapture(coverMedia)
     fourcc = cv2.VideoWriter_fourcc(*'FFV1')
     width = int(vidcap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(vidcap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     size = (width, height)
+    fps = vidcap.get(cv2.CAP_PROP_FPS)
     out = cv2.VideoWriter(outputFile, fourcc, fps, size)
 
     secret_bytes = load_secret(secretFile) + bytes(SUPER_SECRET_KEY, 'utf-8')
@@ -73,7 +61,7 @@ def encode():
     out.release()
     cv2.destroyAllWindows()
 
-def decode():
+def decode(outputFile: str, outputSecret: str):
     vidcap = cv2.VideoCapture(outputFile)
     bits = []
     while True:
@@ -91,9 +79,14 @@ def decode():
         if bytestream[-len(SUPER_SECRET_KEY):].decode("utf-8") == SUPER_SECRET_KEY:
             break
     # `bytestream` should now be equal to `secret_bytes`
-    with open('extracted_secret.txt', 'wb') as f:
+    with open(outputSecret, 'wb') as f:
         f.write(bytestream[:-len(SUPER_SECRET_KEY)])
 
+outputFile = "output1.avi"
+secretFile = "hello.txt"
+coverMedia = "elmo.gif"
+outputSecret = 'extracted_secret.txt'
+SUPER_SECRET_KEY = "This_is_a_very_secret_key_of_Ambrose_Goh"
 
-encode()
-decode()
+encode(coverMedia, secretFile, outputFile)
+decode(outputFile, outputSecret)
