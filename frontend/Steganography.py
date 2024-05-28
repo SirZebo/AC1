@@ -1,13 +1,21 @@
+import os
+import random
+import string
+import cv2
 import streamlit as st
 from streamlit_extras.app_logo import add_logo
-from Analysis import analysis
+from backend.Steganography_img import encode
+
+def generate_random_string(length=8):
+    """Generate a random string of letters and digits."""
+    letters_and_digits = string.ascii_letters + string.digits
+    return ''.join(random.choice(letters_and_digits) for i in range(length))
 
 def steganography():
-    st.header("Steganography")
 
     # Create one columns
     column = st.columns([1])
-    
+
     if "media_uploaded" not in st.session_state:
         st.session_state.media_uploaded = False
 
@@ -29,7 +37,7 @@ def steganography():
             st.write("Uploaded media file: ", media_file.name)
             # st.write(media_file.type)
             if media_file.type == 'image/jpeg' or media_file.type == 'image/png':
-                st.image(media_file_data)
+                st.image(media_file_data, width=300)
             elif media_file.type == 'video/quicktime' or media_file.type == 'video/mp4':
                 st.video(media_file_data)
             else:
@@ -70,3 +78,40 @@ def steganography():
         
         if st.session_state.payload_uploaded:
             st.write(f"Number of LSB bits selected for Steganography: {lsb_selected}")
+
+        if st.session_state.media_uploaded & st.session_state.payload_uploaded:
+
+            if st.button("Perform Image Steganography"):
+                    
+                # Get parent directory
+                parent_directory = os.path.dirname(os.path.dirname(__file__))
+
+                # Get random string for file name
+                random_string = generate_random_string()
+                # New filename with random string
+                new_filename = f"{random_string}_{media_file.name}"
+                # Path to Media/Raw folder 
+                save_path = os.path.join(parent_directory, "Media/Raw", f"{new_filename}")
+
+                # Save the uploaded image
+                with open(save_path, "wb") as f:
+                    f.write(media_file_data)
+
+                # Check if the saved media exists
+                if os.path.exists(save_path):
+                    # Path to Media/Stego folder
+                    save_stego_path = os.path.join(parent_directory, "Media/Steganography", f"stego_{new_filename}")
+
+                    # Check if the file is an image
+                    if media_file.type == 'image/jpeg' or media_file.type == 'image/png':
+                        # Conduct stego on image
+                        encoded_image = encode("secret.zip", save_path, 2)
+                        
+                        # Save encoded image to folder
+                        cv2.imwrite(save_stego_path, encoded_image)
+                        st.image(save_stego_path, caption='Image after conducting Steganography.', width=300)
+
+                    elif media_file.type == 'video/quicktime' or media_file.type == 'video/mp4':
+                        st.video(media_file_data)
+                else:
+                    st.write("Error: Saved media not found.")

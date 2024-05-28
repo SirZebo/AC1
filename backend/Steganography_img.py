@@ -93,6 +93,6 @@ def decode(image_path, bits_per_pixel):
     print("[+] Data extracted and saved as", output_file)
 
 # Example usage:
-encoded_image = encode("secret.zip", "cover_image.jpg", 2)
-cv2.imwrite("stego_image.png", encoded_image)
-decode("stego_image.png", 2)
+# encoded_image = encode("secret.zip", "cover_image.jpg", 2)
+# cv2.imwrite("stego_image.png", encoded_image)
+# decode("stego_image.png", 2)
