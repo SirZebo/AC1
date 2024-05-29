@@ -1,5 +1,7 @@
 import cv2
 import numpy as np
+import threading
+
 
 def to_bin(data):
     """Convert `data` to binary format as string"""
@@ -44,50 +46,61 @@ def encode(secret_file, cover_image_path, bits_per_pixel):
     return image
 
 
-def decode(image_path, bits_per_pixel):
-    image = cv2.imread(image_path)
-    if image is None:
-        raise FileNotFoundError("Image not found for decoding.")
-
+def thread_decode(start_row, end_row, image, bits_per_pixel, output, lock):
     binary_data = ""
     delimiter = to_bin("=====")
-    found_delimiter = False
-
-    for row in image:
-        if found_delimiter:
-            break
+    for row in image[start_row:end_row]:
         for pixel in row:
-            if found_delimiter:
-                break
             for color in pixel:
                 binary_color = to_bin(color)
                 binary_data += binary_color[-bits_per_pixel:]
                 # Check if the last 'n' bits contain the delimiter
                 if binary_data[-len(delimiter):] == delimiter:
-                    found_delimiter = True
-                    break
+                    binary_data = binary_data[:binary_data.find(delimiter)]
+                    with lock:
+                        output.append(binary_data)
+                    return  # Exit as soon as the delimiter is found
 
-    if found_delimiter:
-        binary_data = binary_data[:binary_data.find(delimiter)]
+def decode(image_path, bits_per_pixel, n_threads=4):
+    image = cv2.imread(image_path)
+    if image is None:
+        raise FileNotFoundError("Image not found for decoding.")
+
+    rows_per_thread = image.shape[0] // n_threads
+    threads = []
+    output = []
+    lock = threading.Lock()
+
+    for i in range(n_threads):
+        start_row = i * rows_per_thread
+        end_row = (i + 1) * rows_per_thread if i != n_threads - 1 else image.shape[0]
+        thread = threading.Thread(target=thread_decode, args=(start_row, end_row, image, bits_per_pixel, output, lock))
+        threads.append(thread)
+        thread.start()
+
+    for thread in threads:
+        thread.join()
+
+    # Combine data from all threads
+    binary_data = ''.join(output)
 
     all_bytes = [binary_data[i: i+8] for i in range(0, len(binary_data), 8)]
     decoded_data = bytes([int(byte, 2) for byte in all_bytes])
 
-    # File type detection
+    # File type detection and saving to file as shown in the original function
     file_signature = {
-        b'\x50\x4B\x03\x04': 'ZIP',  # ZIP file header
-        b'\xFF\xD8\xFF': 'JPEG',     # JPEG image header
-        b'\x89\x50\x4E\x47\x0D\x0A\x1A\x0A': 'PNG',  # PNG image header
-        b'\x25\x50\x44\x46': 'PDF'   # PDF file header
+        b'\x50\x4B\x03\x04': 'ZIP',
+        b'\xFF\xD8\xFF': 'JPEG',
+        b'\x89\x50\x4E\x47\x0D\x0A\x1A\x0A': 'PNG',
+        b'\x25\x50\x44\x46': 'PDF'
     }
-    
-    output_file = "extracted_secret.bin"  # Default binary file if no known signature is found
+
+    output_file = "extracted_secret.bin"
     for signature, extension in file_signature.items():
         if decoded_data.startswith(signature):
             output_file = f"extracted_secret.{extension.lower()}"
             break
 
-    # Write to output file
     with open(output_file, "wb") as file:
         file.write(decoded_data)
     print("[+] Data extracted and saved as", output_file)
