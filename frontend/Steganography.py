@@ -13,6 +13,11 @@ def generate_random_string(length=8):
 
 def steganography():
 
+    # Get parent directory
+    parent_directory = os.path.dirname(os.path.dirname(__file__))
+    # Get random string for file name
+    random_string = generate_random_string()
+
     # Create one columns
     column = st.columns([1])
 
@@ -53,7 +58,12 @@ def steganography():
         if payload_file is not None:
             st.session_state.payload_uploaded = True
             payload_file_data = payload_file.getvalue()
-            st.write("Uploaded payload file: ", payload_file.name)
+
+            payload_filename = f"{random_string}_{payload_file.name}"
+            payload_file_path = os.path.join(parent_directory, "Media/Raw", payload_filename)
+            with open(payload_file_path, "wb") as f:
+                f.write(payload_file_data)
+            st.write("Uploaded payload file:", payload_file.name)
 
         st.write('**Step 3. Select number of LSB bits to perform Steganography**')
 
@@ -81,13 +91,7 @@ def steganography():
 
         if st.session_state.media_uploaded & st.session_state.payload_uploaded:
 
-            if st.button("Perform Image Steganography"):
-                    
-                # Get parent directory
-                parent_directory = os.path.dirname(os.path.dirname(__file__))
-
-                # Get random string for file name
-                random_string = generate_random_string()
+            if st.button("Perform Steganography"):
                 # New filename with random string
                 new_filename = f"{random_string}_{media_file.name}"
                 # Path to Media/Raw folder 
@@ -100,12 +104,14 @@ def steganography():
                 # Check if the saved media exists
                 if os.path.exists(save_path):
                     # Path to Media/Stego folder
-                    save_stego_path = os.path.join(parent_directory, "Media/Steganography", f"stego_{new_filename}")
+                    save_stego_path = os.path.join(parent_directory, "Media/Steganography", f"{new_filename}")
 
                     # Check if the file is an image
                     if media_file.type == 'image/jpeg' or media_file.type == 'image/png':
+                        # Ensure lsb_selected is an integer
+                        lsb_selected_int = int(lsb_selected)
                         # Conduct stego on image
-                        encoded_image = encode("secret.zip", save_path, 2)
+                        encoded_image = encode(payload_file_path, save_path, lsb_selected_int)
                         
                         # Save encoded image to folder
                         cv2.imwrite(save_stego_path, encoded_image)
