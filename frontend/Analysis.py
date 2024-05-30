@@ -2,7 +2,9 @@ import os
 import random
 import string
 import streamlit as st
-from backend.Steganography_img import decode
+from backend.Steganography_img import decode as decode_image
+from backend.Steganography_sound import decode_audio
+
 
 def generate_random_string(length=8):
     """Generate a random string of letters and digits."""
@@ -23,7 +25,7 @@ def analysis():
         st.write('**Step 1. Upload a steganography file**')
         media_file = st.file_uploader(
             'media', 
-            type=['.jpg', '.png', '.mp4', '.mov'],
+            type=['.jpg', '.png', '.mp4', '.mov', 'wav'],
             accept_multiple_files=False,
             label_visibility="collapsed"
         )
@@ -36,6 +38,8 @@ def analysis():
                 st.image(media_file_data, width=300)
             elif media_file.type == 'video/quicktime' or media_file.type == 'video/mp4':
                 st.video(media_file_data)
+            elif media_file.type == 'audio/mpeg' or  media_file.type == 'audio/wav':
+                st.audio(media_file_data)
             else:
                 st.write("File type not supported.")
 
@@ -64,7 +68,10 @@ def analysis():
         lsb_selected_int = int(lsb_selected)
         
         if st.session_state.stego_uploaded:
+
             if st.button("Perform Steganalysis"):
+                            
+                status_message = st.empty()
                 
                 # Get parent directory
                 parent_directory = os.path.dirname(os.path.dirname(__file__))
@@ -81,11 +88,22 @@ def analysis():
 
                 if os.path.exists(save_path):
                     try:
-                        st.write("Starting decode process...")
-                        # Call the decode function
-                        decoded_text = decode(save_path, lsb_selected_int)
+                        status_message.write("Starting decode process...")
+
+                        if media_file.type == 'image/jpeg' or media_file.type == 'image/png':
+                            decoded_text = decode_image(save_path, lsb_selected_int)
+
+                        elif media_file.type == 'video/quicktime' or media_file.type == 'video/mp4':
+                            st.video(media_file_data)
+
+                        elif media_file.type == 'audio/mpeg' or  media_file.type == 'audio/wav':
+                            decoded_text = decode_audio(save_path, lsb_selected_int)
+                        
+                        status_message.write("Decoding completed!")
+                        
                         st.write("The secret message is:")
                         st.write(decoded_text)
+                        
                     except Exception as e:
                         st.error(f"An error occurred during decoding: {e}")
                 else:

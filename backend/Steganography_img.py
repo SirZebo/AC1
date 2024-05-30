@@ -17,7 +17,7 @@ def to_bin(data):
         raise TypeError("Type not supported.")
 
 def encode(secret_file, cover_image_path, bits_per_pixel):
-    print(bits_per_pixel)
+
     image = cv2.imread(cover_image_path)
     if image is None:
         raise FileNotFoundError("Cover image not found.")
