@@ -2,6 +2,7 @@ import wave
 import os
 from tempfile import TemporaryDirectory
 import shutil
+import threading
 
 def to_bin(data):
     """Convert `data` to binary format as string"""
@@ -46,27 +47,49 @@ def encode_audio(secret_file, cover_audio_path, bits_per_sample):
 
     print(f"[+] Stego audio created: stego_sound.wav")
 
-def decode_audio(audio_path, bits_per_sample):
+
+def thread_decode_audio(frame_segment, bits_per_sample, output, lock, delimiter):
+    binary_data = ""
+    for byte in frame_segment:
+        binary_data += to_bin(byte)[-bits_per_sample:]
+        # Check if the last 'n' bits contain the delimiter
+        if binary_data[-len(delimiter):] == delimiter:
+            with lock:
+                output.append(binary_data[:binary_data.find(delimiter)])
+            return  # Exit as soon as the delimiter is found
+
+def decode_audio(audio_path, bits_per_sample, n_threads=4):
     print("[+] Decoding...")
     with wave.open(audio_path, 'rb') as stego_audio:
         n_frames = stego_audio.getnframes()
         frames = stego_audio.readframes(n_frames)
         frame_bytes = bytearray(frames)
 
-    binary_data = ""
-    for byte in frame_bytes:
-        binary_data += to_bin(byte)[-bits_per_sample:]
-
-    # Find the delimiter
+    # Prepare threading
+    bytes_per_thread = len(frame_bytes) // n_threads
+    threads = []
+    output = []
+    lock = threading.Lock()
     delimiter = to_bin("=====")
-    data_end = binary_data.find(delimiter)
-    if data_end != -1:
-        binary_data = binary_data[:data_end]
+
+    for i in range(n_threads):
+        start_index = i * bytes_per_thread
+        end_index = (i + 1) * bytes_per_thread if i != n_threads - 1 else len(frame_bytes)
+        frame_segment = frame_bytes[start_index:end_index]
+        thread = threading.Thread(target=thread_decode_audio, args=(frame_segment, bits_per_sample, output, lock, delimiter))
+        threads.append(thread)
+        thread.start()
+
+    for thread in threads:
+        thread.join()
+
+    # Combine data from all threads
+    binary_data = ''.join(output)
 
     # Convert binary data to bytes
     output_bytes = bytes([int(binary_data[i: i+8], 2) for i in range(0, len(binary_data), 8)])
 
-    # File type detection
+    # File type detection and saving
     file_signature = {
         b'\x50\x4B\x03\x04': 'zip',
         b'\xFF\xD8\xFF': 'jpeg',
@@ -87,7 +110,6 @@ def decode_audio(audio_path, bits_per_sample):
         file.write(output_bytes)
     
     print(f"[+] Data extracted and saved as {output_file}")
-
 
 # Example usage:
 encode_audio("secret.zip", "cover_audio.wav", 2)
