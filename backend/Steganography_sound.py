@@ -3,6 +3,7 @@ import os
 from tempfile import TemporaryDirectory
 import shutil
 import threading
+from pydub import AudioSegment
 
 def to_bin(data):
     """Convert `data` to binary format as string"""
@@ -16,11 +17,15 @@ def to_bin(data):
         raise TypeError("Type not supported.")
 
 def encode_audio(secret_file, cover_audio_path, bits_per_sample):
-    # Open cover audio
-    with wave.open(cover_audio_path, 'rb') as cover_audio:
-        n_frames = cover_audio.getnframes()
-        frames = cover_audio.readframes(n_frames)
-        frame_bytes = bytearray(frames)
+    # Determine the file extension and read the cover audio
+    file_extension = cover_audio_path.split('.')[-1].lower()
+    if file_extension in ['wav', 'mp3', 'mp4']:
+        cover_audio = AudioSegment.from_file(cover_audio_path)
+    else:
+        raise ValueError("Unsupported audio format")
+
+    # Get the frame bytes
+    frame_bytes = bytearray(cover_audio.raw_data)
 
     # Embed secret data
     with open(secret_file, "rb") as file:
@@ -40,12 +45,13 @@ def encode_audio(secret_file, cover_audio_path, bits_per_sample):
         if data_index >= data_len:
             break
 
-    # Write the modified bytes back
-    with wave.open('stego_sound.wav', 'wb') as modified_audio:
-        modified_audio.setparams(cover_audio.getparams())
-        modified_audio.writeframes(frame_bytes)
+    # Convert bytearray back to audio
+    modified_audio = cover_audio._spawn(frame_bytes)
 
-    print(f"[+] Stego audio created: stego_sound.wav")
+    # Export modified audio
+    modified_audio_path = 'stego_sound.wav'
+    modified_audio.export(modified_audio_path, format='wav')
+    print(f"[+] Stego audio created: {modified_audio_path}")
 
 
 def thread_decode_audio(frame_segment, bits_per_sample, output, lock, delimiter):
@@ -112,5 +118,5 @@ def decode_audio(audio_path, bits_per_sample, n_threads=4):
     print(f"[+] Data extracted and saved as {output_file}")
 
 # Example usage:
-encode_audio("secret.zip", "cover_audio.wav", 2)
+encode_audio("secret.zip", "cover_audio.mp3", 2)
 decode_audio("stego_sound.wav", 2)
