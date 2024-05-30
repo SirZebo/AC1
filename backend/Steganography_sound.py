@@ -109,7 +109,7 @@ def decode_audio(audio_path, bits_per_sample):
     if output_file.endswith(".zip"):
         return read_zip_file(output_file)
     else:
-        return "Error decoding message."
+        return None
 
 def read_zip_file(zip_path):
     with zipfile.ZipFile(zip_path, 'r') as zip_ref:
