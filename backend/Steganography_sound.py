@@ -54,6 +54,7 @@ def encode_audio(secret_file, cover_audio_path, bits_per_sample):
     print(f"[+] Stego audio created: {modified_audio_path}")
 
 
+
 def thread_decode_audio(frame_segment, bits_per_sample, output, lock, delimiter):
     binary_data = ""
     for byte in frame_segment:
@@ -116,6 +117,7 @@ def decode_audio(audio_path, bits_per_sample, n_threads=4):
         file.write(output_bytes)
     
     print(f"[+] Data extracted and saved as {output_file}")
+
 
 # Example usage:
 encode_audio("secret.zip", "cover_audio.mp3", 2)
