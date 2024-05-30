@@ -2,6 +2,9 @@ import wave
 import os
 from tempfile import TemporaryDirectory
 import shutil
+import zipfile
+
+import numpy as np
 import threading
 from pydub import AudioSegment
 
@@ -17,6 +20,8 @@ def to_bin(data):
         raise TypeError("Type not supported.")
 
 def encode_audio(secret_file, cover_audio_path, bits_per_sample):
+    print("[+] Encoding audio...")
+
     # Determine the file extension and read the cover audio
     file_extension = cover_audio_path.split('.')[-1].lower()
     if file_extension in ['wav', 'mp3', 'mp4']:
@@ -54,7 +59,6 @@ def encode_audio(secret_file, cover_audio_path, bits_per_sample):
     print(f"[+] Stego audio created: {modified_audio_path}")
 
 
-
 def thread_decode_audio(frame_segment, bits_per_sample, output, lock, delimiter):
     binary_data = ""
     for byte in frame_segment:
@@ -66,7 +70,9 @@ def thread_decode_audio(frame_segment, bits_per_sample, output, lock, delimiter)
             return  # Exit as soon as the delimiter is found
 
 def decode_audio(audio_path, bits_per_sample, n_threads=4):
-    print("[+] Decoding...")
+    print("[+] Decoding audio...")
+    print(audio_path)
+
     with wave.open(audio_path, 'rb') as stego_audio:
         n_frames = stego_audio.getnframes()
         frames = stego_audio.readframes(n_frames)
@@ -117,7 +123,6 @@ def decode_audio(audio_path, bits_per_sample, n_threads=4):
         file.write(output_bytes)
     
     print(f"[+] Data extracted and saved as {output_file}")
-
 
 # Example usage:
 encode_audio("secret.zip", "cover_audio.mp3", 2)
