@@ -1,3 +1,5 @@
+import os
+import zipfile
 import cv2
 import numpy as np
 import threading
@@ -15,6 +17,7 @@ def to_bin(data):
         raise TypeError("Type not supported.")
 
 def encode(secret_file, cover_image_path, bits_per_pixel):
+    print(bits_per_pixel)
     image = cv2.imread(cover_image_path)
     if image is None:
         raise FileNotFoundError("Cover image not found.")
@@ -62,6 +65,11 @@ def thread_decode(start_row, end_row, image, bits_per_pixel, output, lock):
                     return  # Exit as soon as the delimiter is found
 
 def decode(image_path, bits_per_pixel, n_threads=4):
+    # Get parent directory
+    parent_directory = os.path.dirname(os.path.dirname(__file__))
+    file_name = os.path.basename(image_path)
+    save_path = os.path.join(parent_directory, "Media/Steganalysis", f"{file_name}")
+
     image = cv2.imread(image_path)
     if image is None:
         raise FileNotFoundError("Image not found for decoding.")
@@ -95,15 +103,30 @@ def decode(image_path, bits_per_pixel, n_threads=4):
         b'\x25\x50\x44\x46': 'PDF'
     }
 
-    output_file = "extracted_secret.bin"
+    output_file = f"{save_path}.bin"
     for signature, extension in file_signature.items():
         if decoded_data.startswith(signature):
-            output_file = f"extracted_secret.{extension.lower()}"
+            output_file = f"{save_path}.{extension.lower()}"
             break
 
     with open(output_file, "wb") as file:
         file.write(decoded_data)
     print("[+] Data extracted and saved as", output_file)
+
+    # If the file is a ZIP, read the contents and return text
+    if output_file.endswith(".zip"):
+        return read_zip_file(output_file)
+    else:
+        return "Error decoding message."
+
+def read_zip_file(zip_path):
+    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+        text_data = ""
+        for file_info in zip_ref.infolist():
+            with zip_ref.open(file_info) as file:
+                if file_info.filename.endswith(".txt"):
+                    text_data += file.read().decode('utf-8') + "\n"
+        return text_data
 
 # Example usage:
 # encoded_image = encode("../secret.zip", "../cover_image.jpg", 2)

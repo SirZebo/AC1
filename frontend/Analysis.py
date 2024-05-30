@@ -70,11 +70,10 @@ def analysis():
                 parent_directory = os.path.dirname(os.path.dirname(__file__))
                 # Get random string for file name
                 random_string = generate_random_string()
-                # New filename with random string
-                new_filename = f"{random_string}_{media_file.name}"
+                 # Saving original file extention
+                original_extension = os.path.splitext(media_file.name)[1]
                 # Path to Media/Steganalysis folder 
-                save_path = os.path.join(parent_directory, "Media/Steganalysis", f"{new_filename}")
-                # save_path = os.path.join(parent_directory, "Media/Steganalysis/yyinIjiq_test_11zon.png")
+                save_path = os.path.join(parent_directory, "Media/Steganalysis", f"{random_string}{original_extension}")
 
                 # Save the uploaded image
                 with open(save_path, "wb") as f:
@@ -85,16 +84,9 @@ def analysis():
                         st.write("Starting decode process...")
                         # Call the decode function
                         decoded_text = decode(save_path, lsb_selected_int)
-                        st.write("Decoded text:")
+                        st.write("The secret message is:")
                         st.write(decoded_text)
                     except Exception as e:
                         st.error(f"An error occurred during decoding: {e}")
                 else:
                     st.error(f"File does not exist at path: {save_path}")
-
-                 # Check if the saved media exists
-                # if os.path.exists(save_path):
-                #     # Check if the file is an image
-                #     if media_file.type == 'image/jpeg' or media_file.type == 'image/png':
-                #         decode(save_path, lsb_selected_int)
-                #         st.write("done")

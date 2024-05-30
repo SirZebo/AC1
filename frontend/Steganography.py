@@ -59,7 +59,9 @@ def steganography():
             st.session_state.payload_uploaded = True
             payload_file_data = payload_file.getvalue()
 
-            payload_filename = f"{random_string}_{payload_file.name}"
+            # Saving original file extention
+            original_extension = os.path.splitext(payload_file.name)[1]
+            payload_filename = f"{random_string}{original_extension}"
             payload_file_path = os.path.join(parent_directory, "Media/Raw", payload_filename)
             with open(payload_file_path, "wb") as f:
                 f.write(payload_file_data)
@@ -92,8 +94,12 @@ def steganography():
         if st.session_state.media_uploaded & st.session_state.payload_uploaded:
 
             if st.button("Perform Steganography"):
+
+                # Saving original file extention
+                original_extension = os.path.splitext(media_file.name)[1]
+
                 # New filename with random string
-                new_filename = f"{random_string}_{media_file.name}"
+                new_filename = f"{random_string}{original_extension}"
                 # Path to Media/Raw folder 
                 save_path = os.path.join(parent_directory, "Media/Raw", f"{new_filename}")
 
@@ -103,8 +109,9 @@ def steganography():
 
                 # Check if the saved media exists
                 if os.path.exists(save_path):
+
                     # Path to Media/Stego folder
-                    save_stego_path = os.path.join(parent_directory, "Media/Steganography", f"{new_filename}")
+                    save_stego_path = os.path.join(parent_directory, "Media/Steganography", f"{random_string}.png")
 
                     # Check if the file is an image
                     if media_file.type == 'image/jpeg' or media_file.type == 'image/png':
