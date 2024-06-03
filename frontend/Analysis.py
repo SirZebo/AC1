@@ -80,34 +80,41 @@ def analysis():
                  # Saving original file extention
                 original_extension = os.path.splitext(media_file.name)[1]
                 # Path to Media/Steganalysis folder 
-                save_path = os.path.join(parent_directory, "Media/Steganalysis", f"{random_string}{original_extension}")
+                save_analysis_path = os.path.join(parent_directory, "Media/Steganalysis", f"{random_string}{original_extension}")
 
-                # Save the uploaded image
-                with open(save_path, "wb") as f:
-                    f.write(media_file_data)
+                # Ensure the directory exists
+                os.makedirs(os.path.dirname(save_analysis_path), exist_ok=True)
 
-                if os.path.exists(save_path):
-                    try:
-                        status_message.write("Starting decode process...")
+                try:
+                    # Save the uploaded image
+                    with open(save_analysis_path, "wb") as f:
+                        f.write(media_file_data)
 
-                        decoded_text = decoding(media_file, media_file_data, save_path, lsb_selected_int)
-                        
-                        # Check if decoded_text is None and perform recursive decoding
-                        if decoded_text is None or lsb_selected_int == 0: 
-                            new_lsb = 1
-                            while new_lsb <= 8 and decoded_text is None:
-                                decoded_text = decoding(media_file, media_file_data, save_path, new_lsb)
-                                new_lsb += 1
+                    if os.path.exists(save_analysis_path):
+                        try:
+                            status_message.write("Starting decode process...")
 
-                        status_message.write("Decoding completed!")
-                        
-                        st.write("The secret message is:")
-                        st.write(decoded_text)
-                        
-                    except Exception as e:
-                        st.error(f"An error occurred during decoding: {e}")
-                else:
-                    st.error(f"File does not exist at path: {save_path}")
+                            decoded_text = decoding(media_file, media_file_data, save_analysis_path, lsb_selected_int)
+                            
+                            # Check if decoded_text is None and perform recursive decoding
+                            if decoded_text is None or lsb_selected_int == 0: 
+                                new_lsb = 1
+                                while new_lsb <= 8 and decoded_text is None:
+                                    decoded_text = decoding(media_file, media_file_data, save_analysis_path, new_lsb)
+                                    new_lsb += 1
+
+                            status_message.write("Decoding completed!")
+                            
+                            st.write("The secret message is:")
+                            st.write(decoded_text)
+                            
+                        except Exception as e:
+                            st.error(f"An error occurred during decoding: {e}")
+                    else:
+                        st.error(f"File does not exist at path: {save_analysis_path}")
+
+                except Exception as e:
+                    st.error(f"An error occurred during saving: {e}")
 
 def decoding(media_file, media_file_data, save_path, lsb):
     decoded_text = None
