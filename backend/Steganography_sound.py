@@ -126,7 +126,7 @@ def decode_audio(audio_path, bits_per_sample, n_threads=4):
     
     for signature, extension in file_signature.items():
         if output_bytes.startswith(signature):
-            output_file = f"extracted_secret.{extension}"
+            output_file = f"{save_path}.{extension}"
             break
 
     with open(output_file, "wb") as file:
