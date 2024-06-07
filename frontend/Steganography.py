@@ -6,6 +6,7 @@ import streamlit as st
 from streamlit_extras.app_logo import add_logo
 from backend.Steganography_img import encode as encode_image
 from backend.Steganography_sound import encode_audio
+from backend.videostego import encode
 
 def generate_random_string(length=8):
     """Generate a random string of letters and digits."""
@@ -143,7 +144,14 @@ def steganography():
                         st.image(save_stego_path, caption='Image after conducting Steganography.', width=300)
 
                     elif media_file.type == 'video/quicktime' or media_file.type == 'video/mp4':
-                        st.video(media_file_data)
+                        
+                        output_mp4_path = os.path.join(parent_directory, "Media/Steganography", f"{random_string}.mp4")
+                        os.makedirs(os.path.dirname(output_mp4_path), exist_ok=True)
+                        
+                        encode(save_path, payload_file_path, output_mp4_path)
+                        
+                        st.video(output_mp4_path)
+
                     
                     elif media_file.type == 'audio/mpeg' or  media_file.type == 'audio/wav':
                         encode_audio(payload_file_path, save_path, lsb_selected_int)

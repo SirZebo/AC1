@@ -1,6 +1,8 @@
 import numpy as np
 import cv2 
 from numpy import binary_repr
+#import os
+#import subprocess
 
 from zipfile import ZipFile
 
@@ -23,6 +25,9 @@ def unzipSecretFile(file_name: str):
         zip.extractall() 
         print("Unzipping secret Done!")
 
+#def convert_avi_to_mp4(input_file: str, output_file: str):
+#    command = f"ffmpeg -i {input_file} -vcodec libx264 {output_file}"
+#    subprocess.run(command, shell=True)
 
 def encode(coverMedia: str, secretFile: str, outputFile: str):
     vidcap = cv2.VideoCapture(coverMedia)
@@ -31,6 +36,8 @@ def encode(coverMedia: str, secretFile: str, outputFile: str):
     height = int(vidcap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     size = (width, height)
     fps = vidcap.get(cv2.CAP_PROP_FPS)
+    #temp_avi_file = outputFile.replace(".mp4", ".avi")
+    #out = cv2.VideoWriter(temp_avi_file, fourcc, fps, size)
     out = cv2.VideoWriter(outputFile, fourcc, fps, size)
 
     zipSecretFile(secretFile)
@@ -73,6 +80,9 @@ def encode(coverMedia: str, secretFile: str, outputFile: str):
     out.release()
     cv2.destroyAllWindows()
 
+    #convert_avi_to_mp4(temp_avi_file, outputFile)
+    #os.remove(temp_avi_file) 
+
 def decode(outputFile: str):
     vidcap = cv2.VideoCapture(outputFile)
     bits = []
@@ -107,4 +117,4 @@ outputSecret = 'extracted_secret.txt'
 SUPER_SECRET_KEY = "This_is_a_very_secret_key_of_Ambrose_Goh"
 
 #encode(coverMedia, secretFile, outputFile)
-decode(outputFile)
+#decode(outputFile)

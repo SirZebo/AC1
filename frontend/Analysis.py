@@ -4,6 +4,7 @@ import string
 import streamlit as st
 from backend.Steganography_img import decode as decode_image
 from backend.Steganography_sound import decode_audio
+from backend.videostego import decode 
 
 
 def generate_random_string(length=8):
@@ -129,6 +130,7 @@ def decoding(media_file, media_file_data, save_path, lsb):
         decoded_text = decode_image(save_path, lsb)
 
     elif media_file.type == 'video/quicktime' or media_file.type == 'video/mp4':
+        decoded_text = decode(save_path)
         st.video(media_file_data)
 
     elif media_file.type == 'audio/mpeg' or  media_file.type == 'audio/wav':
