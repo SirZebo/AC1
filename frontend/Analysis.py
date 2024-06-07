@@ -94,19 +94,25 @@ def analysis():
                         try:
                             status_message.write("Starting decode process...")
 
+                            new_lsb = 0
+
                             decoded_text = decoding(media_file, media_file_data, save_analysis_path, lsb_selected_int)
                             
                             # Check if decoded_text is None and perform recursive decoding
                             if decoded_text is None or lsb_selected_int == 0: 
                                 new_lsb = 1
                                 while new_lsb <= 8 and decoded_text is None:
+                                    status_message.write(f"Attempting to decode with {new_lsb} LSB")
                                     decoded_text = decoding(media_file, media_file_data, save_analysis_path, new_lsb)
                                     new_lsb += 1
 
                             status_message.write("Decoding completed!")
                             
-                            st.write("The secret message is:")
-                            st.write(decoded_text)
+                            if new_lsb >= 8 and decoded_text is None:
+                                st.write("Unable to decode message.")
+                            else:
+                                st.write("The secret message is:")
+                                st.write(decoded_text)
                             
                         except Exception as e:
                             st.error(f"An error occurred during decoding: {e}")

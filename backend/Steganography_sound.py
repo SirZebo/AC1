@@ -53,10 +53,14 @@ def encode_audio(secret_file, cover_audio_path, bits_per_sample):
     # Convert bytearray back to audio
     modified_audio = cover_audio._spawn(frame_bytes)
 
+    parent_directory = os.path.dirname(os.path.dirname(__file__))
+    audio_file_name = os.path.basename(cover_audio_path)
+    file_name, _ = os.path.splitext(audio_file_name)  # Split file name and extension
+    save_path = os.path.join(parent_directory, "Media/Steganography", f"{file_name}.wav")
+
     # Export modified audio
-    modified_audio_path = 'stego_sound.wav'
-    modified_audio.export(modified_audio_path, format='wav')
-    print(f"[+] Stego audio created: {modified_audio_path}")
+    modified_audio.export(save_path, format='wav')
+    print(f"[+] Stego audio created: {save_path}")
 
 
 def thread_decode_audio(frame_segment, bits_per_sample, output, lock, delimiter):
@@ -113,7 +117,13 @@ def decode_audio(audio_path, bits_per_sample, n_threads=4):
         b'\x47\x49\x46\x38': 'gif'
     }
 
-    output_file = "extracted_secret.txt"  # Default to .txt if no match found
+    parent_directory = os.path.dirname(os.path.dirname(__file__))
+    audio_file_name = os.path.basename(audio_path)
+    file_name, _ = os.path.splitext(audio_file_name)  # Split file name and extension
+    save_path = os.path.join(parent_directory, "Media/Steganalysis", file_name)
+
+    output_file = f"{save_path}.txt"  # Default to .txt if no match found
+    
     for signature, extension in file_signature.items():
         if output_bytes.startswith(signature):
             output_file = f"extracted_secret.{extension}"
@@ -141,5 +151,5 @@ def read_zip_file(zip_path):
 
 
 # Example usage:
-encode_audio("secret.zip", "cover_audio.mp3", 2)
-decode_audio("stego_sound.wav", 2)
+# encode_audio("secret.zip", "cover_audio.mp3", 2)
+# decode_audio("stego_sound.wav", 2)
