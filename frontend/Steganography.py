@@ -67,6 +67,10 @@ def steganography():
             original_extension = os.path.splitext(payload_file.name)[1]
             payload_filename = f"{random_string}{original_extension}"
             payload_file_path = os.path.join(parent_directory, "Media/Raw", payload_filename)
+
+            # Ensure the directory exists
+            os.makedirs(os.path.dirname(payload_file_path), exist_ok=True)
+
             with open(payload_file_path, "wb") as f:
                 f.write(payload_file_data)
             st.write("Uploaded payload file:", payload_file.name)
@@ -111,6 +115,9 @@ def steganography():
                 # Path to Media/Raw folder 
                 save_path = os.path.join(parent_directory, "Media/Raw", f"{new_filename}")
 
+                # Ensure the directory exists
+                os.makedirs(os.path.dirname(save_path), exist_ok=True)
+
                 # Save the uploaded image
                 with open(save_path, "wb") as f:
                     f.write(media_file_data)
@@ -127,6 +134,9 @@ def steganography():
                         encoded_image = encode_image(payload_file_path, save_path, lsb_selected_int)
                          # Path to Media/Stego folder
                         save_stego_path = os.path.join(parent_directory, "Media/Steganography", f"{random_string}.png")
+
+                        # Ensure the directory exists
+                        os.makedirs(os.path.dirname(save_stego_path), exist_ok=True)
 
                         # Save encoded image to folder
                         cv2.imwrite(save_stego_path, encoded_image)

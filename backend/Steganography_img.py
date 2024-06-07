@@ -117,7 +117,7 @@ def decode(image_path, bits_per_pixel, n_threads=4):
     if output_file.endswith(".zip"):
         return read_zip_file(output_file)
     else:
-        return "Error decoding message."
+        return None
 
 def read_zip_file(zip_path):
     with zipfile.ZipFile(zip_path, 'r') as zip_ref:
