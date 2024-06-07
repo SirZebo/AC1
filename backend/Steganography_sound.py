@@ -3,6 +3,7 @@ import os
 from tempfile import TemporaryDirectory
 import shutil
 import zipfile
+from backend.zip import unzipSecretFile
 
 import numpy as np
 import threading
@@ -134,22 +135,28 @@ def decode_audio(audio_path, bits_per_sample, n_threads=4):
     
     print(f"[+] Data extracted and saved as {output_file}")
 
-    # If the file is a ZIP, read the contents and return text
     if output_file.endswith(".zip"):
-        return read_zip_file(output_file)
-    else:
-        return None
+        return unzipSecretFile(output_file)
 
-def read_zip_file(zip_path):
-    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-        text_data = ""
-        for file_info in zip_ref.infolist():
-            with zip_ref.open(file_info) as file:
-                if file_info.filename.endswith(".txt"):
-                    text_data += file.read().decode('utf-8') + "\n"
-        return text_data
+#     # If the file is a ZIP, read the contents and return text
+#     if output_file.endswith(".zip"):
+#         return read_zip_file(output_file)
+#     else:
+#         return None
+
+# def read_zip_file(zip_path):
+#     with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+#         text_data = ""
+#         for file_info in zip_ref.infolist():
+#             with zip_ref.open(file_info) as file:
+#                 if file_info.filename.endswith(".txt"):
+#                     text_data += file.read().decode('utf-8') + "\n"
+#         return text_data
 
 
 # Example usage:
-# encode_audio("secret.zip", "cover_audio.mp3", 2)
-# decode_audio("stego_sound.wav", 2)
+# encode_audio("./secret.zip", "./cover_audio.mp3", 6)
+# decode_audio("./Media/Steganography/cover_audio.wav", 6)
+
+
+# 1, 2, 4, 

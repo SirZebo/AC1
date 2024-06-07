@@ -5,7 +5,6 @@ import streamlit as st
 from backend.Steganography_img import decode as decode_image
 from backend.Steganography_sound import decode_audio
 
-
 def generate_random_string(length=8):
     """Generate a random string of letters and digits."""
     letters_and_digits = string.ascii_letters + string.digits

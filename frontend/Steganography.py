@@ -6,6 +6,7 @@ import streamlit as st
 from streamlit_extras.app_logo import add_logo
 from backend.Steganography_img import encode as encode_image
 from backend.Steganography_sound import encode_audio
+from backend.zip import  zipSecretFile
 
 def generate_random_string(length=8):
     """Generate a random string of letters and digits."""
@@ -129,11 +130,16 @@ def steganography():
 
                     # Check if the file is an image
                     if media_file.type == 'image/jpeg' or media_file.type == 'image/png':
-                        
+
+                        zippedPayload_file_path = zipSecretFile(payload_file_path)
                         # Conduct stego on image
-                        encoded_image = encode_image(payload_file_path, save_path, lsb_selected_int)
+                        encoded_image = encode_image(zippedPayload_file_path, save_path, lsb_selected_int)
                          # Path to Media/Stego folder
                         save_stego_path = os.path.join(parent_directory, "Media/Steganography", f"{random_string}.png")
+                        
+                        
+
+
 
                         # Ensure the directory exists
                         os.makedirs(os.path.dirname(save_stego_path), exist_ok=True)
@@ -146,7 +152,8 @@ def steganography():
                         st.video(media_file_data)
                     
                     elif media_file.type == 'audio/mpeg' or  media_file.type == 'audio/wav':
-                        encode_audio(payload_file_path, save_path, lsb_selected_int)
+                        zippedPayload_file_path = zipSecretFile(payload_file_path)
+                        encode_audio(zippedPayload_file_path, save_path, lsb_selected_int)
                         st.audio(media_file_data)
 
                     status_message.write("Encoding completed!")
