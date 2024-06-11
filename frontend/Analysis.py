@@ -26,7 +26,7 @@ def analysis():
         st.write('**Step 1. Upload a steganography file**')
         media_file = st.file_uploader(
             'media', 
-            type=['.jpg', '.png', '.mp4', '.mov', 'wav'],
+            type=['.jpg', '.png', 'wav'], # remove following for now: '.mp4', '.mov
             accept_multiple_files=False,
             label_visibility="collapsed"
         )
