@@ -6,7 +6,9 @@ import streamlit as st
 from streamlit_extras.app_logo import add_logo
 from backend.Steganography_img import encode as encode_image
 from backend.Steganography_sound import encode_audio
-from backend.zip import  zipSecretFile
+from backend.videostego import encode_video_with_audio  # Import the new function
+from backend.zip import zipSecretFile
+
 
 def generate_random_string(length=8):
     """Generate a random string of letters and digits."""
@@ -20,7 +22,7 @@ def steganography():
     # Get random string for file name
     random_string = generate_random_string()
 
-    # Create one columns
+    # Create one column
     column = st.columns([1])
 
     if "media_uploaded" not in st.session_state:
@@ -33,29 +35,28 @@ def steganography():
     with column[0].container(height=900, border=False):
         st.write('**Step 1. Upload a media file**')
         media_file = st.file_uploader(
-            'media', 
+            'media',
             type=['.jpg', '.png', '.mp4', '.mov', 'wav'],
             accept_multiple_files=False,
             label_visibility="collapsed"
         )
         if media_file is not None:
             st.session_state.media_uploaded = True
-            media_file_data = media_file.getvalue() # Read file as bytes
+            media_file_data = media_file.getvalue()  # Read file as bytes
             st.write("Uploaded media file: ", media_file.name)
             st.write(media_file.type)
             if media_file.type == 'image/jpeg' or media_file.type == 'image/png':
                 st.image(media_file_data, width=300)
             elif media_file.type == 'video/quicktime' or media_file.type == 'video/mp4':
                 st.video(media_file_data)
-            elif media_file.type == 'audio/mpeg' or  media_file.type == 'audio/wav':
+            elif media_file.type == 'audio/mpeg' or media_file.type == 'audio/wav':
                 st.audio(media_file_data)
             else:
                 st.write("File type not supported.")
         
         st.write('**Step 2. Upload a payload file**')
-        st.write('*Payload has to be in a zipped folder.')
         payload_file = st.file_uploader(
-            'payload', 
+            'payload',
             accept_multiple_files=False,
             label_visibility="collapsed",
             disabled=not st.session_state.media_uploaded
@@ -64,7 +65,7 @@ def steganography():
             st.session_state.payload_uploaded = True
             payload_file_data = payload_file.getvalue()
 
-            # Saving original file extention
+            # Saving original file extension
             original_extension = os.path.splitext(payload_file.name)[1]
             payload_filename = f"{random_string}{original_extension}"
             payload_file_path = os.path.join(parent_directory, "Media/Raw", payload_filename)
@@ -99,63 +100,106 @@ def steganography():
 
         # Ensure lsb_selected is an integer
         lsb_selected_int = int(lsb_selected)
-        
+
         if st.session_state.payload_uploaded:
             st.write(f"Number of LSB bits selected for Steganography: {lsb_selected}")
 
         if st.session_state.media_uploaded & st.session_state.payload_uploaded:
             
             if st.button("Perform Steganography"):
+                try:
+                    status_message = st.empty()  # Create a placeholder for the status message
+
+                    # Saving original file extension
+                    original_extension = os.path.splitext(media_file.name)[1]
+                    # New filename with random string
+                    new_filename = f"{random_string}{original_extension}"
+                    # Path to Media/Raw folder 
+                    save_path = os.path.join(parent_directory, "Media/Raw", f"{new_filename}")
+
+                    # Ensure the directory exists
+                    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+
+                    # Save the uploaded image
+                    with open(save_path, "wb") as f:
+                        f.write(media_file_data)
+
+                    # Check if the saved media exists
+                    if os.path.exists(save_path):
+
+                        status_message.write("Starting encode process...")
+
+                        # Check if the file is an image
+                        if media_file.type == 'image/jpeg' or media_file.type == 'image/png':
+
+                            zippedPayload_file_path = zipSecretFile(payload_file_path)
+                            # Conduct stego on image
+                            encoded_image = encode_image(zippedPayload_file_path, save_path, lsb_selected_int)
+                            # Path to Media/Stego folder
+                            save_stego_path = os.path.join(parent_directory, "Media/Steganography", f"{random_string}.png")
                             
-                status_message = st.empty()  # Create a placeholder for the status message
+                            # Ensure the directory exists
+                            os.makedirs(os.path.dirname(save_stego_path), exist_ok=True)
 
-                # Saving original file extention
-                original_extension = os.path.splitext(media_file.name)[1]
-                # New filename with random string
-                new_filename = f"{random_string}{original_extension}"
-                # Path to Media/Raw folder 
-                save_path = os.path.join(parent_directory, "Media/Raw", f"{new_filename}")
+                            # Save encoded image to folder
+                            cv2.imwrite(save_stego_path, encoded_image)
+                            st.image(save_stego_path, caption='Image after conducting Steganography.', width=300)
 
-                # Ensure the directory exists
-                os.makedirs(os.path.dirname(save_path), exist_ok=True)
+                            with open(save_stego_path, "rb") as f:
+                                st.download_button(
 
-                # Save the uploaded image
-                with open(save_path, "wb") as f:
-                    f.write(media_file_data)
+                                    label="Download stego file",
 
-                # Check if the saved media exists
-                if os.path.exists(save_path):
+                                    data=f,
 
-                    status_message.write("Starting encode process...")
+                                    file_name=os.path.basename(save_stego_path),
 
-                    # Check if the file is an image
-                    if media_file.type == 'image/jpeg' or media_file.type == 'image/png':
+                                    mime="application/octet-stream"
 
-                        zippedPayload_file_path = zipSecretFile(payload_file_path)
-                        # Conduct stego on image
-                        encoded_image = encode_image(zippedPayload_file_path, save_path, lsb_selected_int)
-                         # Path to Media/Stego folder
-                        save_stego_path = os.path.join(parent_directory, "Media/Steganography", f"{random_string}.png")
+                                )
+
+
+                        elif media_file.type == 'video/quicktime' or media_file.type == 'video/mp4':
+                            
+                            output_mp4_path = os.path.join(parent_directory, "Media/Steganography", f"{random_string}.mp4")
+                            os.makedirs(os.path.dirname(output_mp4_path), exist_ok=True)
+                            
+                            encode_video_with_audio(save_path, payload_file_path, output_mp4_path, lsb_selected_int)
+                            
+                            st.video(output_mp4_path)
+                            
+                            with open(output_mp4_path, "rb") as f:
+                                st.download_button(
+
+                                    label="Download stego file",
+
+                                    data=f,
+
+                                    file_name=os.path.basename(output_mp4_path),
+
+                                    mime="application/octet-stream"
+
+                                )
+
                         
-                        
+                        elif media_file.type == 'audio/mpeg' or  media_file.type == 'audio/wav':
+                            zippedPayload_file_path = zipSecretFile(payload_file_path)
+                            stegoAudio_path = encode_audio(zippedPayload_file_path, save_path, lsb_selected_int)
+                            st.audio(media_file_data)
+                            with open(stegoAudio_path, "rb") as f:
+                                st.download_button(
 
+                                    label="Download stego file",
 
+                                    data=f,
 
-                        # Ensure the directory exists
-                        os.makedirs(os.path.dirname(save_stego_path), exist_ok=True)
+                                    file_name=os.path.basename(stegoAudio_path),
 
-                        # Save encoded image to folder
-                        cv2.imwrite(save_stego_path, encoded_image)
-                        st.image(save_stego_path, caption='Image after conducting Steganography.', width=300)
+                                    mime="application/octet-stream"
+                                )
 
-                    elif media_file.type == 'video/quicktime' or media_file.type == 'video/mp4':
-                        st.video(media_file_data)
-                    
-                    elif media_file.type == 'audio/mpeg' or  media_file.type == 'audio/wav':
-                        zippedPayload_file_path = zipSecretFile(payload_file_path)
-                        encode_audio(zippedPayload_file_path, save_path, lsb_selected_int)
-                        st.audio(media_file_data)
-
-                    status_message.write("Encoding completed!")
-                else:
-                    st.write("Error: Saved media not found.")
+                        status_message.write("Encoding completed!")
+                    else:
+                        st.write("Error: Saved media not found.")
+                except Exception as e:
+                    st.write("Error: "+ str(e))

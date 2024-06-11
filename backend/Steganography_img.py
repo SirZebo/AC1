@@ -31,7 +31,15 @@ def encode(secret_file, cover_image_path, bits_per_pixel):
     binary_secret_data = to_bin(secret_data) + to_bin("=====")
     n_bits = image.shape[0] * image.shape[1] * 3 * bits_per_pixel
     if len(binary_secret_data) > n_bits:
-        raise ValueError("Insufficient bytes, need bigger image or less data.")
+        available_space = n_bits // 8
+        required_space = len(binary_secret_data) // 8
+        current_payload_size = len(secret_data)
+        raise ValueError(
+            f"Insufficient bytes, need bigger image or less data. "
+            f"Available space: {available_space} bytes, "
+            f"Required space: {required_space} bytes, "
+            f"Current payload size: {current_payload_size} bytes."
+        )
 
     data_index = 0
     data_len = len(binary_secret_data)
@@ -73,7 +81,9 @@ def decode(image_path, bits_per_pixel, n_threads=4):
     # Get parent directory
     parent_directory = os.path.dirname(os.path.dirname(__file__))
     file_name = os.path.basename(image_path)
-    save_path = os.path.join(parent_directory, "Media/Steganalysis", f"{file_name}")
+    file_name_without_extension = os.path.splitext(file_name)[0]
+    save_path = os.path.join(parent_directory, "Media/Steganalysis", f"{file_name_without_extension}")
+
 
     image = cv2.imread(image_path)
     if image is None:
@@ -103,9 +113,6 @@ def decode(image_path, bits_per_pixel, n_threads=4):
     # File type detection and saving to file as shown in the original function
     file_signature = {
         b'\x50\x4B\x03\x04': 'ZIP',
-        b'\xFF\xD8\xFF': 'JPEG',
-        b'\x89\x50\x4E\x47\x0D\x0A\x1A\x0A': 'PNG',
-        b'\x25\x50\x44\x46': 'PDF'
     }
 
     output_file = f"{save_path}.bin"
@@ -117,27 +124,18 @@ def decode(image_path, bits_per_pixel, n_threads=4):
     with open(output_file, "wb") as file:
         file.write(decoded_data)
     print("[+] Data extracted and saved as", output_file)
-    
+
+
+    result = None
     if output_file.endswith(".zip"):
-        return unzipSecretFile(output_file)
-    
-    # # If the file is a ZIP, read the contents and return text
-    # if output_file.endswith(".zip"):
-    #     return read_zip_file(output_file)
-    # else:
-    #     return None
-    
-    # If the file is a ZIP, read the contents and return text
+        result = unzipSecretFile(output_file)
+    if (result != None):
+        if os.path.exists(image_path): os.remove(image_path)
+        if os.path.exists(output_file): os.remove(output_file)
+    return result
 
 
-# def read_zip_file(zip_path):
-#     with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-#         text_data = ""
-#         for file_info in zip_ref.infolist():
-#             with zip_ref.open(file_info) as file:
-#                 if file_info.filename.endswith(".txt"):
-#                     text_data += file.read().decode('utf-8') + "\n"
-#         return text_data
+    
 
 # Example usage:
 # encoded_image = encode("./secret.zip", "./cover_image.jpg",1)

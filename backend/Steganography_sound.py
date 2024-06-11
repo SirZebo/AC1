@@ -37,6 +37,21 @@ def encode_audio(secret_file, cover_audio_path, bits_per_sample):
     with open(secret_file, "rb") as file:
         secret_data = file.read()
     binary_secret_data = to_bin(secret_data) + to_bin("=====")
+    
+    available_space_bits = len(frame_bytes) * bits_per_sample
+    required_space_bits = len(binary_secret_data)
+
+    if required_space_bits > available_space_bits:
+        available_space_bytes = available_space_bits // 8
+        required_space_bytes = required_space_bits // 8
+        current_payload_size = len(secret_data)
+        raise ValueError(
+            f"Insufficient bytes, need bigger audio file or less data. "
+            f"Available space: {available_space_bytes} bytes, "
+            f"Required space: {required_space_bytes} bytes, "
+            f"Current payload size: {current_payload_size} bytes."
+        )
+
     data_index = 0
     data_len = len(binary_secret_data)
 
@@ -62,7 +77,7 @@ def encode_audio(secret_file, cover_audio_path, bits_per_sample):
     # Export modified audio
     modified_audio.export(save_path, format='wav')
     print(f"[+] Stego audio created: {save_path}")
-
+    return save_path
 
 def thread_decode_audio(frame_segment, bits_per_sample, output, lock, delimiter):
     binary_data = ""
@@ -76,7 +91,7 @@ def thread_decode_audio(frame_segment, bits_per_sample, output, lock, delimiter)
 
 def decode_audio(audio_path, bits_per_sample, n_threads=4):
     print("[+] Decoding audio...")
-    print(audio_path)
+    # print(audio_path)
 
     with wave.open(audio_path, 'rb') as stego_audio:
         n_frames = stego_audio.getnframes()
@@ -110,12 +125,6 @@ def decode_audio(audio_path, bits_per_sample, n_threads=4):
     # File type detection and saving
     file_signature = {
         b'\x50\x4B\x03\x04': 'zip',
-        b'\xFF\xD8\xFF': 'jpeg',
-        b'\x89\x50\x4E\x47\x0D\x0A\x1A\x0A': 'png',
-        b'\x25\x50\x44\x46': 'pdf',
-        b'\x49\x44\x33': 'mp3',
-        b'\x42\x4D': 'bmp',
-        b'\x47\x49\x46\x38': 'gif'
     }
 
     parent_directory = os.path.dirname(os.path.dirname(__file__))
@@ -135,28 +144,16 @@ def decode_audio(audio_path, bits_per_sample, n_threads=4):
     
     print(f"[+] Data extracted and saved as {output_file}")
 
+    result = None
     if output_file.endswith(".zip"):
-        return unzipSecretFile(output_file)
-
-#     # If the file is a ZIP, read the contents and return text
-#     if output_file.endswith(".zip"):
-#         return read_zip_file(output_file)
-#     else:
-#         return None
-
-# def read_zip_file(zip_path):
-#     with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-#         text_data = ""
-#         for file_info in zip_ref.infolist():
-#             with zip_ref.open(file_info) as file:
-#                 if file_info.filename.endswith(".txt"):
-#                     text_data += file.read().decode('utf-8') + "\n"
-#         return text_data
-
+        result = unzipSecretFile(output_file)
+    if result is not None:
+        if os.path.exists(audio_path):
+            os.remove(audio_path)
+        if os.path.exists(output_file):
+            os.remove(output_file)
+    return result
 
 # Example usage:
 # encode_audio("./secret.zip", "./cover_audio.mp3", 6)
 # decode_audio("./Media/Steganography/cover_audio.wav", 6)
-
-
-# 1, 2, 4, 
