@@ -6,7 +6,7 @@ import streamlit as st
 from streamlit_extras.app_logo import add_logo
 from backend.Steganography_img import encode as encode_image
 from backend.Steganography_sound import encode_audio
-from backend.videostego import encode
+from backend.videostego import encode_video_with_audio  # Import the new function
 
 def generate_random_string(length=8):
     """Generate a random string of letters and digits."""
@@ -20,7 +20,7 @@ def steganography():
     # Get random string for file name
     random_string = generate_random_string()
 
-    # Create one columns
+    # Create one column
     column = st.columns([1])
 
     if "media_uploaded" not in st.session_state:
@@ -33,21 +33,21 @@ def steganography():
     with column[0].container(height=900, border=False):
         st.write('**Step 1. Upload a media file**')
         media_file = st.file_uploader(
-            'media', 
+            'media',
             type=['.jpg', '.png', '.mp4', '.mov', 'wav'],
             accept_multiple_files=False,
             label_visibility="collapsed"
         )
         if media_file is not None:
             st.session_state.media_uploaded = True
-            media_file_data = media_file.getvalue() # Read file as bytes
+            media_file_data = media_file.getvalue()  # Read file as bytes
             st.write("Uploaded media file: ", media_file.name)
             st.write(media_file.type)
             if media_file.type == 'image/jpeg' or media_file.type == 'image/png':
                 st.image(media_file_data, width=300)
             elif media_file.type == 'video/quicktime' or media_file.type == 'video/mp4':
                 st.video(media_file_data)
-            elif media_file.type == 'audio/mpeg' or  media_file.type == 'audio/wav':
+            elif media_file.type == 'audio/mpeg' or media_file.type == 'audio/wav':
                 st.audio(media_file_data)
             else:
                 st.write("File type not supported.")
@@ -55,7 +55,7 @@ def steganography():
         st.write('**Step 2. Upload a payload file**')
         st.write('*Payload has to be in a zipped folder.')
         payload_file = st.file_uploader(
-            'payload', 
+            'payload',
             accept_multiple_files=False,
             label_visibility="collapsed",
             disabled=not st.session_state.media_uploaded
@@ -64,7 +64,7 @@ def steganography():
             st.session_state.payload_uploaded = True
             payload_file_data = payload_file.getvalue()
 
-            # Saving original file extention
+            # Saving original file extension
             original_extension = os.path.splitext(payload_file.name)[1]
             payload_filename = f"{random_string}{original_extension}"
             payload_file_path = os.path.join(parent_directory, "Media/Raw", payload_filename)
@@ -99,7 +99,7 @@ def steganography():
 
         # Ensure lsb_selected is an integer
         lsb_selected_int = int(lsb_selected)
-        
+
         if st.session_state.payload_uploaded:
             st.write(f"Number of LSB bits selected for Steganography: {lsb_selected}")
 
@@ -109,7 +109,7 @@ def steganography():
                             
                 status_message = st.empty()  # Create a placeholder for the status message
 
-                # Saving original file extention
+                # Saving original file extension
                 original_extension = os.path.splitext(media_file.name)[1]
                 # New filename with random string
                 new_filename = f"{random_string}{original_extension}"
@@ -133,7 +133,7 @@ def steganography():
                         
                         # Conduct stego on image
                         encoded_image = encode_image(payload_file_path, save_path, lsb_selected_int)
-                         # Path to Media/Stego folder
+                        # Path to Media/Stego folder
                         save_stego_path = os.path.join(parent_directory, "Media/Steganography", f"{random_string}.png")
 
                         # Ensure the directory exists
@@ -148,7 +148,7 @@ def steganography():
                         output_mp4_path = os.path.join(parent_directory, "Media/Steganography", f"{random_string}.mp4")
                         os.makedirs(os.path.dirname(output_mp4_path), exist_ok=True)
                         
-                        encode(save_path, payload_file_path, output_mp4_path)
+                        encode_video_with_audio(save_path, payload_file_path, output_mp4_path, lsb_selected_int)
                         
                         st.video(output_mp4_path)
 

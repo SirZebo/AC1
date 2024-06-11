@@ -4,8 +4,8 @@ import string
 import streamlit as st
 from backend.Steganography_img import decode as decode_image
 from backend.Steganography_sound import decode_audio
-from backend.videostego import decode 
-
+from backend.videostego import decode
+from backend.videostego import decode_video
 
 def generate_random_string(length=8):
     """Generate a random string of letters and digits."""
@@ -98,7 +98,7 @@ def analysis():
                             new_lsb = 0
 
                             decoded_text = decoding(media_file, media_file_data, save_analysis_path, lsb_selected_int)
-                            
+                            print("decode_text: " , decoded_text)
                             # Check if decoded_text is None and perform recursive decoding
                             if decoded_text is None or lsb_selected_int == 0: 
                                 new_lsb = 1
@@ -130,7 +130,7 @@ def decoding(media_file, media_file_data, save_path, lsb):
         decoded_text = decode_image(save_path, lsb)
 
     elif media_file.type == 'video/quicktime' or media_file.type == 'video/mp4':
-        decoded_text = decode(save_path)
+        decoded_text = decode_video(save_path)
         st.video(media_file_data)
 
     elif media_file.type == 'audio/mpeg' or  media_file.type == 'audio/wav':
