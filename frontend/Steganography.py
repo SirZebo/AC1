@@ -6,7 +6,7 @@ import streamlit as st
 from streamlit_extras.app_logo import add_logo
 from backend.Steganography_img import encode as encode_image
 from backend.Steganography_sound import encode_audio
-from backend.videostego import encode_video_with_audio  # Import the new function
+from backend.videostego import encode_video  # Import the new function
 from backend.zip import zipSecretFile
 
 
@@ -36,7 +36,7 @@ def steganography():
         st.write('**Step 1. Upload a media file**')
         media_file = st.file_uploader(
             'media',
-            type=['.jpg', '.png', 'wav'], # remove following for now: '.mp4', '.mov
+            type=['.jpg', '.png', 'wav', '.mp4', '.mov'], # remove following for now: '.mp4', '.mov'
             accept_multiple_files=False,
             label_visibility="collapsed"
         )
@@ -161,10 +161,10 @@ def steganography():
 
                         elif media_file.type == 'video/quicktime' or media_file.type == 'video/mp4':
                             
-                            output_mp4_path = os.path.join(parent_directory, "Media/Steganography", f"{random_string}.mp4")
+                            output_mp4_path = os.path.join(parent_directory, "Media/Steganography", f"{random_string}.avi")
                             os.makedirs(os.path.dirname(output_mp4_path), exist_ok=True)
                             
-                            encode_video_with_audio(save_path, payload_file_path, output_mp4_path, lsb_selected_int)
+                            encode_video(save_path, payload_file_path, output_mp4_path)
                             
                             st.video(output_mp4_path)
                             

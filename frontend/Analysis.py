@@ -4,7 +4,6 @@ import string
 import streamlit as st
 from backend.Steganography_img import decode as decode_image
 from backend.Steganography_sound import decode_audio
-from backend.videostego import decode
 from backend.videostego import decode_video
 
 def generate_random_string(length=8):
@@ -26,7 +25,7 @@ def analysis():
         st.write('**Step 1. Upload a steganography file**')
         media_file = st.file_uploader(
             'media', 
-            type=['.jpg', '.png', 'wav'], # remove following for now: '.mp4', '.mov
+            type=['.jpg', '.png', 'wav', ], # remove following for now: '.mp4', '.mov'
             accept_multiple_files=False,
             label_visibility="collapsed"
         )

@@ -1,40 +1,42 @@
+import os
 import numpy as np
 import cv2 
 from numpy import binary_repr
 from moviepy.editor import VideoFileClip, ImageSequenceClip
 #import os
 #import subprocess
+from zip import zipSecretFile
+from zip import unzipSecretFile
 
-from zipfile import ZipFile
 
-ZIPPED_SECRET_FILE_NAME = 'zippedSecret.zip'
+SUPER_SECRET_KEY = "This_is_a_very_secret_key_of_Ambrose_Goh"
 
 def load_secret(fname):
     with open(fname, 'rb') as f:
         data = f.read()
     return data
 
-def zipSecretFile(inputFile):
-    with ZipFile(ZIPPED_SECRET_FILE_NAME,'w') as zip:
-        print("Zipping secret...")
-        zip.write(inputFile)
-        print("Zipping secret Done!")
+# def zipSecretFile(inputFile):
+#     with ZipFile(ZIPPED_SECRET_FILE_NAME,'w') as zip:
+#         print("Zipping secret...")
+#         zip.write(inputFile)
+#         print("Zipping secret Done!")
 
-def unzipSecretFile(file_name: str):
-    try:
-        with ZipFile(file_name, 'r') as zip:
-            zip.extractall()
-            print(f"Successfully extracted contents from {file_name}")
-    except FileNotFoundError:
-        print(f"File {file_name} not found")
-    except Exception as e:
-        print(f"Error in unzipping the file: {e}")
+# def unzipSecretFile(file_name: str):
+#     try:
+#         with ZipFile(file_name, 'r') as zip:
+#             zip.extractall()
+#             print(f"Successfully extracted contents from {file_name}")
+#     except FileNotFoundError:
+#         print(f"File {file_name} not found")
+#     except Exception as e:
+#         print(f"Error in unzipping the file: {e}")
 
 #def convert_avi_to_mp4(input_file: str, output_file: str):
 #    command = f"ffmpeg -i {input_file} -vcodec libx264 {output_file}"
 #    subprocess.run(command, shell=True)
 
-def encode(coverMedia: str, secretFile: str, outputFile: str):
+def encode_video(coverMedia: str, secretFile: str, outputFile: str):
     vidcap = cv2.VideoCapture(coverMedia)
     fourcc = cv2.VideoWriter_fourcc(*'FFV1')
     width = int(vidcap.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -45,8 +47,8 @@ def encode(coverMedia: str, secretFile: str, outputFile: str):
     #out = cv2.VideoWriter(temp_avi_file, fourcc, fps, size)
     out = cv2.VideoWriter(outputFile, fourcc, fps, size)
 
-    zipSecretFile(secretFile)
-    secret_bytes = load_secret(ZIPPED_SECRET_FILE_NAME) + bytes(SUPER_SECRET_KEY, 'utf-8')
+    zipFile_path = zipSecretFile(secretFile)
+    secret_bytes = load_secret(zipFile_path) + bytes(SUPER_SECRET_KEY, 'utf-8')
     bits = []
     # As it's assumed you'll be embedding 3 bits in each pixel,
     # we'll split each byte in three triplets.
@@ -127,7 +129,7 @@ def encode_video_with_audio(input_video_path, payload_file_path, output_video_pa
     # Write the result video to a file
     new_video.write_videofile(output_video_path, codec='libx264', audio_codec='aac')
     
-def decode_video(outputFile: str):
+# def decode_video(outputFile: str):
     vidcap = cv2.VideoCapture(outputFile)
     bits = []
     
@@ -172,7 +174,7 @@ def bits_to_byte(bits):
     return byte_val & 0xFF  # Ensure the byte value is within valid range (0-255)
 
 
-def decode(outputFile: str):
+def decode_video(outputFile: str):
     vidcap = cv2.VideoCapture(outputFile)
     bits = []
     while True:
@@ -193,17 +195,44 @@ def decode(outputFile: str):
                 break
         except UnicodeDecodeError:
             continue
-    # `bytestream` should now be equal to `secret_bytes`
-    with open(ZIPPED_SECRET_FILE_NAME, 'wb') as f:
-        f.write(bytestream[:-len(SUPER_SECRET_KEY)])
-    
-    unzipSecretFile(ZIPPED_SECRET_FILE_NAME)
 
-outputFile = "output1.avi"
+    # File type detection and saving
+    file_signature = {
+        b'\x50\x4B\x03\x04': 'zip',
+    }
+    parent_directory = os.path.dirname(os.path.dirname(__file__))
+    video_file_name = os.path.basename(outputFile)
+    file_name, _ = os.path.splitext(video_file_name)  # Split file name and extension
+    save_path = os.path.join(parent_directory, "Media/Steganalysis", file_name)
+
+    
+    for signature, extension in file_signature.items():
+            if bytestream.startswith(signature):
+                output_file = f"{save_path}.{extension}"
+                break
+
+    with open(output_file, "wb") as file:
+        file.write(bytestream)
+    
+    print(f"[+] Data extracted and saved as {output_file}")
+
+    result = None
+    if output_file.endswith(".zip"):
+        result = unzipSecretFile(output_file)
+    # if result is not None:
+    #     if os.path.exists(outputFile):
+    #         os.remove(outputFile)
+    #     if os.path.exists(output_file):
+    #         os.remove(output_file)
+    return result
+
+    
+
+
+
+outputFile = "stego_video.avi"
 secretFile = "hello.txt"
 coverMedia = "elmo.gif"
-outputSecret = 'extracted_secret.txt'
-SUPER_SECRET_KEY = "This_is_a_very_secret_key_of_Ambrose_Goh"
 
-#encode(coverMedia, secretFile, outputFile)
-#decode(outputFile)
+encode_video(coverMedia, secretFile, outputFile)
+decode_video(outputFile)
